@@ -1,0 +1,23 @@
+{
+  "name": "ab-test",
+  "description": "",
+  "main": "index.js",
+  "authors": [
+    "weiguo.ni"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/FTChinese/ab-test",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "devDependencies": {
+    "ftc-share": "^1.1.0"
+  },
+  "dependencies": {
+    "o-grid": "^4.2.1"
+  }
+}
