@@ -61,7 +61,7 @@ function createElement(name, attributes) {
 	}
 	return node;
 }
-function createBarrier(id, commonClass, message) {
+function createBarrier() {
 	var registerElt = createElement('a', {
 		'href': 'http://user.ftchinese.com/register/?ccode=1B110427',
 		'class': 'o-register'
@@ -86,8 +86,7 @@ function createBarrier(id, commonClass, message) {
 	}, messageElt, actionWrapper, closeElt);
 
 	var barrierElt = createElement('div', {
-		'class': 'o-barrier',
-		'id': id
+		'class': 'o-barrier'
 	}, barrierWrapper);
 
 	return barrierElt;
@@ -95,165 +94,85 @@ function createBarrier(id, commonClass, message) {
 
 function recordAction(type, category) {
 	try {
-		ga('send', 'event', 'Barrier ' + type, category, window.FTStoryid);
+		ga('send', 'event', type, category, window.FTStoryid);
 	} catch(err) {
 		console.log('send', 'event', type, category)
 	}
 }
 
-function barrierOnButtom(elm) {
-	var oldClassName = elm.className;
-	if (oldClassName.indexOf('--bottom') === -1) {
-		elm.className = oldClassName + ' ' + oldClassName + '--bottom';
-		var msgElm = elm.querySelector('.o-barrier__message');
-		msgElm.innerHTML = '欢迎来到FT中文网，我们诚邀您登录访问或免费注册为FT中文网会员。';
+function barrierOnBottom(className) {
+	if (className.indexOf('--bottom') === -1) {
 		return false
 	}
 	return true;
 }
 
+function goToBottom(elm) {
+	var oldClassName = elm.className;
+	if (!barrierOnBottom(oldClassName)) {
+		elm.className = oldClassName + ' ' + oldClassName + '--bottom';
+		var msgElm = elm.querySelector('.o-barrier__message');
+		msgElm.innerHTML = '欢迎来到FT中文网，我们诚邀您登录访问或免费注册为FT中文网会员。';		
+	}
+}
+
+var barrierEvents = {
+	'o-barrier': function(e, type, rand) {
+		if ((!barrierOnBottom(e.currentTarget.className)) && rand === 0) {
+			goToBottom(e.currentTarget);
+			recordAction(type, 'Click Close BG');
+		}
+	},
+
+	'o-barrier__close': function(e, type) {
+		if (!barrierOnBottom(e.currentTarget.className)) {
+			goToBottom(e.currentTarget);
+			recordAction(type, 'Click Close Button');
+		}
+	},
+
+	'o-register': function(e, type) {
+		if (barrierOnBottom(e.currentTarget.className)) {
+			type = type + ' bottom';
+		}
+		recordAction(type, 'Register');
+	},
+
+	'o-login': function(e, type) {
+		if (barrierOnBottom(e.currentTarget.className)) {
+			type = type + ' bottom';
+		}
+		recordAction(type, 'Log In');
+	}			
+}
+
 function abTest() {
-	const rand = getRandomIntInclusive(0, 0);
+	const rand = getRandomIntInclusive(0, 1);
 	console.log('rand number: ', rand);
+	const barrierTypes = ['Barrier Page 003', 'Barrier Page 004'];
 
-	const barrierNew = createBarrier('barrier-new');
+	const barrierElt = createBarrier();
+	document.body.appendChild(barrierElt);
+	const barrierType = barrierTypes[rand];
 
-	document.body.appendChild(barrierNew);
+	barrierElt.style.display = 'block';
 
-	const oBarrierInstances = [
-		{
-			elt: barrierNew,
-			type: 'Barrier Page New',
-			events: {
-				'o-barrier': function(e, type) {
-					// e.currentTarget.style.display = 'none';
-					if (!barrierOnButtom(e.currentTarget)) {
-						recordAction(type, 'Click Close BG');
-					}
-				},
-
-				'o-barrier__close': function(e, type) {
-					// e.currentTarget.style.display = 'none';
-					if (!barrierOnButtom(e.currentTarget)) {
-						recordAction(type, 'Click Close Button');
-					}
-				},
-
-				'o-register': function(e, type) {
-					e.preventDefault();
-					if (barrierOnButtom(e.currentTarget)) {
-						recordAction(type + ' bottom', 'Register');
-					} else {
-						recordAction(type, 'Register');
-					}
-				},
-
-				'o-login': function(e, type) {
-					e.preventDefault();
-					if (barrierOnButtom(e.currentTarget)) {
-						recordAction(type + ' bottom', 'Log In');
-					} else {
-						recordAction(type, 'Log In');
-					}
-				}			
-			}
-		},
-		{
-			elt: document.getElementById('overlay-login'),
-			type: 'Barrier Page',
-			events: {
-				'register': function(e, type) {
-					recordAction(type, 'Register');
-				},
-
-				'findPassword': function(e, type) {
-					recordAction(type, 'Find Password');
-				},
-
-				'logIn': function(e, type) {
-					// e.preventDefault();
-					recordAction(type, 'Log In');
-				},
-
-				'overlay-close': function(e, type) {
-					// closeOverlay(e.currentTarget.id);
-					recordAction(type, 'Click Close Button');
-				},
-
-				'overlay-bg': function(e, type) {
-					// closeOverlay(e.currentTarget.id);
-					recordAction(type, 'Click Close BG');
-				}
-			}
-		}
-	];
-
-	const barrierType = oBarrierInstances[rand].type;
-	const barrierElt = oBarrierInstances[rand].elt;
-	const barrierEvents = oBarrierInstances[rand].events;
-
-	if (rand === 0) {
-		barrierElt.style.display = 'block';
-		try {
-			ga('send', 'event', barrierType, 'Pop Out', window.FTStoryid, {'nonInteraction':1});
-		} catch(err) {
-			console.log('send', 'event', barrierType,  'Pop Out');
-		}
-
-		barrierElt.onclick = function(e) {
-			const eventKey = e.target.className;
-			console.log('clicked element className: ', eventKey);
-
-			if (barrierEvents[eventKey]) {
-				barrierEvents[eventKey](e, barrierType);
-			}
-		};	
-	} else if (rand === 1) {
-		// showOverlay('overlay-login');
-		barrierElt.style.display = 'block';
-		const msgElt = document.getElementById('login-reason');
-		msgElt.innerHTML = '亲爱的读者，您在' + historyDays + '天内连续阅读了' + maxStory + '篇以上文章，如果您喜欢FT中文网，我们诚邀您登录访问或<a href="http://user.ftchinese.com/register/?ccode=1B110427" class=highlight>免费注册</a>为FT中文网的会员。';
-			try {
-		
+	try {
 		ga('send', 'event', barrierType, 'Pop Out', window.FTStoryid, {'nonInteraction':1});
-		} catch(err) {
-			console.log('send', 'event', barrierType,  'Pop Out');
+	} catch(err) {
+		console.log('send', 'event', barrierType,  'Pop Out');
+	}
+
+	barrierElt.onclick = function(e) {
+		e.preventDefault();
+		console.log('clicked element className: ', eventKey);
+
+		const eventKey = e.target.className;
+
+		if (barrierEvents[eventKey]) {
+			barrierEvents[eventKey](e, barrierType, rand);
 		}
-
-		barrierElt.onclick = function(e) {
-			e.preventDefault();
-			const target = e.target
-			const className = target.className;
-			const tagName = target.tagName.toLowerCase();
-			var eventKey = '';
-
-			if (tagName === 'a') {
-
-				if (target.href.indexOf('register') !== -1) {
-					target.href = 'http://user.ftchinese.com/register/?ccode=1B110427'
-					eventKey = 'register';
-				} else if (target.href.indexOf('findpassword') !== -1) {
-					eventKey = 'findPassword';
-				}
-			} else {
-				eventKey = className;
-			}
-
-			console.log(eventKey);
-
-			if (barrierEvents[eventKey]) {
-				barrierEvents[eventKey](e, barrierType);
-			}
-		};
-
-		barrierElt.getElementsByTagName('form')[0].onsubmit = function(e) {
-			const eventKey = 'logIn';
-
-			if (barrierEvents[eventKey]) {
-				barrierEvents[eventKey](e, barrierType);
-			}
-		}
-	}	
+	};	
 }
 /*************/
 const maxStory = 0;
@@ -291,63 +210,41 @@ if (viewHistory.indexOf(storyId) < 0 && userName === '') {
 }
 /*********/
 
+// function Barrier(id) {
+// 	var oBarrier = this;
+// 	var rootEl = createBarrier();
 
+// 	function init() {
+// 		oBarrier.rootEl = rootEl
+// 		oBarrier.msgEl = this.rootEl.querySelector('.o-barrier__message');
+// 		oBarrier.id = id;
+// 		oBarrier.type = 'Barrier Page 00' + id;
+// 	}
+
+// 	function changeMsg(msg) {
+// 		oBarrier.msgEl.textContent = msg;
+// 	}
+
+// 	function recordAction(type, category) {
+// 		try {
+// 			ga('send', 'event', this.type, category, window.FTStoryid);
+// 		} catch(err) {
+// 			console.log('send', 'event', type, category)
+// 		}
+// 	}
+// }
+
+// Barrier.init(len) {
+// 	var rand = getRandomIntInclusive();
+
+// 	var barrierInstances = [];
+// 	len = len ? len : 2;
+// 	for (var i = 0; i < len; i++) {
+// 		barrierInstances.push(new Barrier(3 + i));
+// 	}
+
+// 	var barrier = barrierInstances[rand];
+// }
 
 	
-
-// if (rand === 0) {
-// 	const barrierType = oBarrierInstances[rand].type;
-
-// 	barrierElt.style.display = 'block';
-// 	try {
-// 		ga('send', 'event', 'Barrier Page', 'Pop Out', window.FTStoryid, {'nonInteraction':1});
-// 	} catch(err) {
-// 		console.log('send', 'event', 'Barrier New',  'Pop Out');
-// 	}
-
-// 	barrierElt.onclick = function(e) {
-// 		const targetClassName = e.target.className;
-
-// 		if (oBarrierEvents[targetClassName]) {
-// 			oBarrierEvents[targetClassName](e, barrierType);
-// 		}
-// 	};	
-// } else if (rand === 1) {
-// 	const overLayLogin = document.querySelector('#overlay-login');
-// 	// overLayLogin.classList.add('on');
-// 	overLayLogin.style.display = 'block';
-// 	document.getElementById('login-reason').innerHTML = '亲爱的读者，您在 30 天内连续阅读了 8 篇以上文章，如果您喜欢FT中文网，我们诚邀您登录访问或<a href="http://user.ftchinese.com/register/?ccode=1B110427" class=highlight>免费注册</a>为FT中文网的会员。';
-// 	// ga('send', 'event', 'Barrier Page', 'Pop Out', window.FTStoryid, {'nonInteraction':1});
-// 	console.log('popout');
-// 	var ele = document.getElementById('overlay-login');
-// 	var form = ele.getElementsByTagName('form')[0];
-// 	form.onsubmit = function (e) {
-// 		// ga('send', 'event', 'Barrier Page', 'Log In', window.FTStoryid);
-// 		console.log('submit');
-// 		e.preventDefault()
-// 	};
-// 	var register = ele.getElementsByTagName('a');
-// 	for (var i=0; i<register.length; i++) {
-		
-// 		register[i].onclick = function(e) {
-// 			console.log('click regeter');
-// 			e.preventDefault();
-// 		};
-
-// 		// if (register[i].href.indexOf('register')>=0) {
-// 		// 	register[i].href = 'http://user.ftchinese.com/register/?ccode=1B110427';
-// 		// }
-// 	}
-// 	var closeButton = ele.querySelector('.overlay-close');
-// 	closeButton.onclick = function () {
-// 		// ga('send', 'event', 'Barrier Page', 'Click Close Button', window.FTStoryid);
-// 		console.log('close button')
-// 	};
-// 	var overlayBG = ele.querySelector('.overlay-bg');
-// 	overlayBG.onclick = function () {
-// 		// ga('send', 'event', 'Barrier Page', 'Click Close BG', window.FTStoryid);
-// 		console.log('click close bg')
-// 	};
-// }
-/**********/
 
